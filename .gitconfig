@@ -1,18 +1,10 @@
-[user]
-	name = Shuotian Cheng
-	email = stcheng_89@hotmail.com
 [alias]
 	br = branch
 	ci = commit
 	co = checkout
+	dc = diff --cached
+	pr = pull --rebase
 	ru = remote update
 	st = status
-	ciaa = commit -a --amend
-	glog = log --color --graph --branches --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'
-	last = log -1 HEAD
 [credential]
 	helper = store
-[core]
-	pager = less
-[push]
-	default = simple
