@@ -1,1 +1,1 @@
-notify = ["bash", "/Users/stcheng/Workplace/tmux-agent-indicator/adapters/codex-notify.sh"]
+notify = ["bash", "/Users/stcheng/Workspace/tmux-agent-indicator/adapters/codex-notify.sh"]

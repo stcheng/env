@@ -1,4 +1,4 @@
-# Minimal local config for the forked tmux-powerline checkout in ~/Workplace.
+# Minimal local config for the forked tmux-powerline checkout in ~/Workspace.
 
 export TMUX_POWERLINE_PATCHED_FONT_IN_USE="true"
 export TMUX_POWERLINE_THEME="stcheng"

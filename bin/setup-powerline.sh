@@ -5,8 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMUX_POWERLINE_DIR="$HOME/.config/tmux-powerline"
 CODEX_CONFIG_DIR="$HOME/.codex"
 CODEX_CONFIG_FILE="$CODEX_CONFIG_DIR/config.toml"
-TMUX_POWERLINE_PLUGIN_DIR="$HOME/Workplace/tmux-powerline"
-TMUX_AGENT_PLUGIN_DIR="$HOME/Workplace/tmux-agent-indicator"
+TMUX_POWERLINE_PLUGIN_DIR="$HOME/Workspace/tmux-powerline"
+TMUX_AGENT_PLUGIN_DIR="$HOME/Workspace/tmux-agent-indicator"
 NOTIFY_LINE="notify = [\"bash\", \"$TMUX_AGENT_PLUGIN_DIR/adapters/codex-notify.sh\"]"
 
 backup_and_link() {
