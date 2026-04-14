@@ -27,7 +27,8 @@
 ├── codex/
 ├── iterm.json
 ├── misc/
-└── tmux-powerline/
+├── tmux-powerline/
+└── vendor/
 ```
 
 ## 根目录文件
@@ -68,9 +69,9 @@ tmux 主配置文件。
 - 外观配置：状态栏、pane border、message style、window format
 - 鼠标支持
 - vi 风格 copy mode
-- 加载本机 `~/Workspace` 里的两个 fork 插件：
-  - `tmux-powerline`
-  - `tmux-agent-indicator`
+- 加载本仓库 `vendor/` 下 vendored 的 tmux runtime：
+  - `vendor/tmux-powerline`
+  - `vendor/tmux-agent-indicator`
 
 这个文件现在是“入口配置”，真正的 powerline 外观细节在 `tmux-powerline/` 目录下。
 
@@ -193,9 +194,7 @@ iTerm2 profile 配置导出文件。
 
 它会做这些事：
 
-- 检查本机是否存在两个 fork 插件目录：
-  - `~/Workspace/tmux-powerline`
-  - `~/Workspace/tmux-agent-indicator`
+- 检查本仓库里的 vendored tmux runtime 是否存在
 - 把仓库里的配置文件 symlink 到用户目录：
   - `~/.tmux.conf`
   - `~/.config/tmux-powerline/config.sh`
@@ -206,8 +205,8 @@ iTerm2 profile 配置导出文件。
 
 这意味着：
 
-- 仓库负责保存“配置”
-- `~/Workspace` 里的 fork 仓库负责保存“插件源码”
+- 仓库同时保存“配置”和“运行时源码”
+- 用户目录只保留 symlink 和最终生效的配置入口
 
 这是当前推荐的职责边界。
 
@@ -217,9 +216,9 @@ iTerm2 profile 配置导出文件。
 
 #### `codex/notify.toml`
 
-这是一个很小的 TOML 片段，只包含：
+这是一个很小的 TOML 模板片段，只包含：
 
-- `notify = ["bash", ".../tmux-agent-indicator/adapters/codex-notify.sh"]`
+- `notify = ["bash", ".../vendor/tmux-agent-indicator/adapters/codex-notify.sh"]`
 
 它的作用是告诉 Codex CLI 在事件发生时通知 `tmux-agent-indicator`，从而让 tmux 中的 agent 状态可以被显示出来。
 
@@ -257,11 +256,11 @@ b,2.0
 
 ### `tmux-powerline/`
 
-放本仓库自己的 `tmux-powerline` 用户层配置，而不是插件源码本身。
+放本仓库自己的 `tmux-powerline` 用户层配置，也就是 overlay / custom layer。
 
-插件源码在：
+底层 runtime 已 vendored 到：
 
-- `~/Workspace/tmux-powerline`
+- `vendor/tmux-powerline`
 
 这个目录保存的是“覆盖层”和“自定义层”。
 
@@ -306,7 +305,7 @@ tmux-powerline 的主用户配置。
 
 它会调用：
 
-- `~/Workspace/tmux-agent-indicator/scripts/indicator.sh`
+- `vendor/tmux-agent-indicator/scripts/indicator.sh`
 
 然后把返回结果嵌入 tmux-powerline 右侧状态栏。
 
@@ -316,7 +315,7 @@ tmux-powerline 的主用户配置。
 
 当前链路大致如下：
 
-1. `~/.tmux.conf` 加载本机 fork 的 `tmux-powerline` 和 `tmux-agent-indicator`
+1. `~/.tmux.conf` 加载本仓库 vendored 的 `tmux-powerline` 和 `tmux-agent-indicator`
 2. `tmux-powerline` 从 `~/.config/tmux-powerline/` 读取用户配置
 3. 这些用户配置实际是 symlink 到本仓库里的文件
 4. `agent_indicator.sh` 这个自定义 segment 会调用 `tmux-agent-indicator`
@@ -325,24 +324,34 @@ tmux-powerline 的主用户配置。
 
 也就是说：
 
-- 插件源码在 `~/Workspace`
-- 配置源码在这个仓库
-- `setup-powerline.sh` 负责把两者接起来
+- runtime 和配置都在这个仓库
+- `$HOME` 下只保留最终生效所需的 symlink
+- `setup-powerline.sh` 负责把它们连接并刷新 tmux
 
 ## 推荐使用方式
 
-如果迁移到新机器，或者想重新应用这套配置，先准备好两个 fork：
-
-- `~/Workspace/tmux-powerline`
-- `~/Workspace/tmux-agent-indicator`
-
-然后执行：
+如果迁移到新机器，或者想重新应用这套配置，直接执行：
 
 ```bash
 ~/Workspace/env/bin/setup-powerline.sh
 ```
 
-它会把当前仓库里的 powerline 配置重新链接到 `$HOME` 下，并刷新 tmux。
+它会把当前仓库里的 tmux 配置重新链接到 `$HOME` 下，并刷新 tmux。
+
+## `vendor/`
+
+放 vendored 的 tmux runtime 代码。
+
+当前包括：
+
+- `vendor/tmux-powerline`
+- `vendor/tmux-agent-indicator`
+
+它们不再作为单独 git repo 存在于本仓库内部，也不使用 submodule。
+
+origin / last-import 信息见：
+
+- `TMUX_VENDORED.md`
 
 ## 后续可以继续整理的点
 
