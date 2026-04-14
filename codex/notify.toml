@@ -1,1 +1,3 @@
-notify = ["bash", "/Users/stcheng/Workspace/tmux-agent-indicator/adapters/codex-notify.sh"]
+# Template only. `bin/setup-powerline.sh` writes the real absolute path into
+# `~/.codex/config.toml`.
+notify = ["bash", "/absolute/path/to/env/vendor/tmux-agent-indicator/adapters/codex-notify.sh"]

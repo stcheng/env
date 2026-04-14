@@ -5,9 +5,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMUX_POWERLINE_DIR="$HOME/.config/tmux-powerline"
 CODEX_CONFIG_DIR="$HOME/.codex"
 CODEX_CONFIG_FILE="$CODEX_CONFIG_DIR/config.toml"
-TMUX_POWERLINE_PLUGIN_DIR="$HOME/Workspace/tmux-powerline"
-TMUX_AGENT_PLUGIN_DIR="$HOME/Workspace/tmux-agent-indicator"
-NOTIFY_LINE="notify = [\"bash\", \"$TMUX_AGENT_PLUGIN_DIR/adapters/codex-notify.sh\"]"
+TMUX_POWERLINE_VENDOR_DIR="$REPO_ROOT/vendor/tmux-powerline"
+TMUX_AGENT_VENDOR_DIR="$REPO_ROOT/vendor/tmux-agent-indicator"
+NOTIFY_LINE="notify = [\"bash\", \"$TMUX_AGENT_VENDOR_DIR/adapters/codex-notify.sh\"]"
 
 backup_and_link() {
 	local source_path="$1"
@@ -28,12 +28,12 @@ backup_and_link() {
 	ln -s "$source_path" "$target_path"
 }
 
-ensure_plugin_checkout() {
+ensure_vendored_runtime() {
 	local path="$1"
 	local name="$2"
 
-	if [ ! -d "$path/.git" ]; then
-		echo "Missing expected fork checkout: $path ($name)" >&2
+	if [ ! -f "$path" ]; then
+		echo "Missing vendored runtime file: $path ($name)" >&2
 		exit 1
 	fi
 }
@@ -67,8 +67,8 @@ PY
 }
 
 main() {
-	ensure_plugin_checkout "$TMUX_POWERLINE_PLUGIN_DIR" "tmux-powerline"
-	ensure_plugin_checkout "$TMUX_AGENT_PLUGIN_DIR" "tmux-agent-indicator"
+	ensure_vendored_runtime "$TMUX_POWERLINE_VENDOR_DIR/main.tmux" "tmux-powerline"
+	ensure_vendored_runtime "$TMUX_AGENT_VENDOR_DIR/agent-indicator.tmux" "tmux-agent-indicator"
 
 	backup_and_link "$REPO_ROOT/.tmux.conf" "$HOME/.tmux.conf"
 	backup_and_link "$REPO_ROOT/tmux-powerline/config.sh" "$TMUX_POWERLINE_DIR/config.sh"
