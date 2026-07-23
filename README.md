@@ -226,7 +226,7 @@ iTerm2 profile 配置导出文件。
 注意：
 
 - 这个文件本身不会自动生效
-- 真正把它写入 `~/.codex/config.toml` 的，是 `bin/setup-powerline.sh`
+- 真正把它以顶层 `notify` 键写入 `~/.codex/config.toml` 的，是 `bin/setup-powerline.sh`
 
 因此它更像“配置来源”或“配置模板”，不是直接被程序读取的最终文件。
 

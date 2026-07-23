@@ -60,19 +60,43 @@ config_path = pathlib.Path(sys.argv[1])
 notify_line = sys.argv[2]
 text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
 
-exact_pattern = re.compile(r'(?m)^[ \t]*notify[ \t]*=[ \t]*\[\s*"bash"\s*,\s*".*/tmux-agent-indicator/adapters/codex-notify\.sh"\s*\][ \t]*$')
+table_pattern = re.compile(r'^\s*\[', re.MULTILINE)
 generic_pattern = re.compile(r'(?m)^[ \t]*notify[ \t]*=[ \t]*.*$')
+managed_notify_pattern = re.compile(
+    r'^[ \t]*notify[ \t]*=[ \t]*\[\s*"bash"\s*,\s*".*/(?:'
+    r'codex/tmux-codex-notify\.sh|vendor/tmux-agent-indicator/adapters/codex-notify\.sh)"\s*\][ \t]*$'
+)
 
-if exact_pattern.search(text):
-    text = exact_pattern.sub(notify_line, text, count=1)
-elif generic_pattern.search(text):
-    text = generic_pattern.sub(notify_line, text, count=1)
+# TOML keys after a table header belong to that table. Keep `notify` in the
+# root section, before the first table header, even when the original file has
+# only table-scoped settings.
+table_match = table_pattern.search(text)
+if table_match:
+    root_text = text[:table_match.start()]
+    table_text = text[table_match.start():]
 else:
-    if text and not text.endswith("\n"):
-        text += "\n"
-    text += notify_line + "\n"
+    root_text = text
+    table_text = ""
 
-config_path.write_text(text, encoding="utf-8")
+if generic_pattern.search(root_text):
+    root_text = generic_pattern.sub(notify_line, root_text, count=1)
+else:
+    if root_text and not root_text.endswith("\n"):
+        root_text += "\n"
+    if root_text and not root_text.endswith("\n\n"):
+        root_text += "\n"
+    root_text += notify_line + "\n"
+    if table_text:
+        root_text += "\n"
+
+# Earlier versions of this installer could append the managed setting while a
+# table was open. Remove only those known managed forms from table sections.
+table_text = "".join(
+    line for line in table_text.splitlines(keepends=True)
+    if not managed_notify_pattern.match(line.rstrip("\r\n"))
+)
+
+config_path.write_text(root_text + table_text, encoding="utf-8")
 PY
 }
 
