@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SYNC_SCRIPT="$REPO_ROOT/bin/tmux-sync-codex-window-name"
+
+replace_sync_hook() {
+    local hook_type="$1"
+    local command="$2"
+
+    while IFS= read -r existing_hook; do
+        [ -n "$existing_hook" ] || continue
+        case "$existing_hook" in
+            *"$SYNC_SCRIPT"*)
+                tmux set-hook -gu "${existing_hook%% *}" 2>/dev/null || true
+                ;;
+        esac
+    done < <(tmux show-hooks -g "$hook_type" 2>/dev/null || true)
+
+    tmux set-hook -ag "$hook_type" "$command"
+}
+
+replace_sync_hook \
+    "after-select-pane" \
+    "run-shell -b 'bash \"$SYNC_SCRIPT\" --pane \"#{pane_id}\" --quiet >/dev/null 2>&1 || true'"
+replace_sync_hook \
+    "after-select-window" \
+    "run-shell -b 'bash \"$SYNC_SCRIPT\" --pane \"#{pane_id}\" --quiet >/dev/null 2>&1 || true'"
+replace_sync_hook \
+    "after-new-window" \
+    "run-shell -b 'bash \"$SYNC_SCRIPT\" --window \"#{window_id}\" --wait 10 --quiet >/dev/null 2>&1 || true'"

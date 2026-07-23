@@ -7,7 +7,8 @@ CODEX_CONFIG_DIR="$HOME/.codex"
 CODEX_CONFIG_FILE="$CODEX_CONFIG_DIR/config.toml"
 TMUX_POWERLINE_VENDOR_DIR="$REPO_ROOT/vendor/tmux-powerline"
 TMUX_AGENT_VENDOR_DIR="$REPO_ROOT/vendor/tmux-agent-indicator"
-NOTIFY_LINE="notify = [\"bash\", \"$TMUX_AGENT_VENDOR_DIR/adapters/codex-notify.sh\"]"
+CODEX_NOTIFY_SCRIPT="$REPO_ROOT/codex/tmux-codex-notify.sh"
+NOTIFY_LINE="notify = [\"bash\", \"$CODEX_NOTIFY_SCRIPT\"]"
 
 backup_and_link() {
 	local source_path="$1"
@@ -26,6 +27,15 @@ backup_and_link() {
 	fi
 
 	ln -s "$source_path" "$target_path"
+}
+
+remove_managed_link() {
+	local source_path="$1"
+	local target_path="$2"
+
+	if [ -L "$target_path" ] && [ "$(readlink "$target_path")" = "$source_path" ]; then
+		rm -f "$target_path"
+	fi
 }
 
 ensure_vendored_runtime() {
@@ -74,6 +84,7 @@ main() {
 	backup_and_link "$REPO_ROOT/tmux-powerline/config.sh" "$TMUX_POWERLINE_DIR/config.sh"
 	backup_and_link "$REPO_ROOT/tmux-powerline/themes/stcheng.sh" "$TMUX_POWERLINE_DIR/themes/stcheng.sh"
 	backup_and_link "$REPO_ROOT/tmux-powerline/segments/agent_indicator.sh" "$TMUX_POWERLINE_DIR/segments/agent_indicator.sh"
+	remove_managed_link "$REPO_ROOT/tmux-powerline/segments/tmux_session_info.sh" "$TMUX_POWERLINE_DIR/segments/tmux_session_info.sh"
 
 	ensure_codex_notify
 

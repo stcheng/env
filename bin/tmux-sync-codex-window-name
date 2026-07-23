@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SESSION_INDEX_FILE="${CODEX_HOME:-$HOME/.codex}/session_index.jsonl"
+
+usage() {
+    echo "Usage: $(basename "$0") [--pane PANE_ID | --window WINDOW_ID] [--wait SECONDS] [--quiet]" >&2
+}
+
+target_pane="${TMUX_PANE:-}"
+target_window=""
+wait_seconds=0
+quiet=false
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --pane)
+            target_pane="${2:-}"
+            target_window=""
+            shift 2
+            ;;
+        --window)
+            target_window="${2:-}"
+            target_pane=""
+            shift 2
+            ;;
+        --wait)
+            wait_seconds="${2:-}"
+            shift 2
+            ;;
+        --quiet)
+            quiet=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            exit 2
+            ;;
+    esac
+done
+
+case "$wait_seconds" in
+    ''|*[!0-9]*)
+        echo "--wait must be a non-negative integer" >&2
+        exit 2
+        ;;
+esac
+
+sync_once() {
+    local pane_id="$target_pane"
+    if [ -n "$target_window" ]; then
+        pane_id="$(tmux display-message -p -t "$target_window" '#{pane_id}' 2>/dev/null || true)"
+    fi
+    [ -n "$pane_id" ] || return 1
+
+    local pane_tty tty_name codex_pid session_file meta_id meta_session_id thread_name window_id
+    pane_tty="$(tmux display-message -p -t "$pane_id" '#{pane_tty}' 2>/dev/null || true)"
+    [ -n "$pane_tty" ] || return 1
+    tty_name="${pane_tty#/dev/}"
+
+    codex_pid="$(ps -t "$tty_name" -o pid=,command= 2>/dev/null | awk '$2 == "codex" { print $1; exit }')"
+    [ -n "$codex_pid" ] || return 1
+
+    session_file="$(lsof -p "$codex_pid" 2>/dev/null | awk '/\/\.codex\/sessions\/.*\.jsonl$/ { print $NF; exit }')"
+    [ -f "$session_file" ] || return 1
+    [ -f "$SESSION_INDEX_FILE" ] || return 1
+
+    meta_id="$(jq -r 'select(.type == "session_meta") | .payload.id' "$session_file")"
+    meta_session_id="$(jq -r 'select(.type == "session_meta") | .payload.session_id' "$session_file")"
+    thread_name="$(jq -rs --arg id "$meta_id" --arg sid "$meta_session_id" '[.[] | select(.id == $id or .id == $sid)] | last | .thread_name // empty' "$SESSION_INDEX_FILE")"
+    [ -n "$thread_name" ] || return 1
+
+    case "$thread_name" in
+        *$'\n'*|*$'\r'*) return 1 ;;
+    esac
+
+    window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}' 2>/dev/null || true)"
+    [ -n "$window_id" ] || return 1
+    tmux rename-window -t "$window_id" "$thread_name"
+}
+
+for (( attempt = 0; attempt <= wait_seconds; attempt++ )); do
+    if sync_once; then
+        exit 0
+    fi
+    [ "$attempt" -lt "$wait_seconds" ] && sleep 1
+done
+
+if [ "$quiet" = true ]; then
+    exit 0
+fi
+
+exit 1

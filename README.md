@@ -218,9 +218,10 @@ iTerm2 profile 配置导出文件。
 
 这是一个很小的 TOML 模板片段，只包含：
 
-- `notify = ["bash", ".../vendor/tmux-agent-indicator/adapters/codex-notify.sh"]`
+- `notify = ["bash", ".../codex/tmux-codex-notify.sh"]`
 
-它的作用是告诉 Codex CLI 在事件发生时通知 `tmux-agent-indicator`，从而让 tmux 中的 agent 状态可以被显示出来。
+它的作用是告诉 Codex CLI 在事件发生时：通知 `tmux-agent-indicator` 更新 agent 状态，并同步
+当前 Codex chat 名到对应的 tmux window。
 
 注意：
 
@@ -318,15 +319,20 @@ tmux-powerline 的主用户配置。
 1. `~/.tmux.conf` 加载本仓库 vendored 的 `tmux-powerline` 和 `tmux-agent-indicator`
 2. `tmux-powerline` 从 `~/.config/tmux-powerline/` 读取用户配置
 3. 这些用户配置实际是 symlink 到本仓库里的文件
-4. `agent_indicator.sh` 这个自定义 segment 会调用 `tmux-agent-indicator`
-5. Codex CLI 通过 `notify` 把事件发给 `tmux-agent-indicator`
-6. `tmux-agent-indicator` 再把状态显示到 tmux 里
+4. `agent_indicator.sh` 显示 agent 状态
+5. Codex CLI 的 `notify` wrapper 在通知时，将发送通知的 pane 对应的 tmux window 改为该 chat 名
+6. tmux 在切换 pane/window 时同步；新建 window 后最多等待 10 秒让 Codex 启动并同步
+7. `tmux-agent-indicator` 再把状态显示到 tmux 里
 
 也就是说：
 
 - runtime 和配置都在这个仓库
 - `$HOME` 下只保留最终生效所需的 symlink
 - `setup-powerline.sh` 负责把它们连接并刷新 tmux
+
+同步是事件驱动的：不会在 powerline 的刷新周期内扫描所有 pane。`/rename` 没有专用的
+Codex 通知事件，因此改名后的兜底更新发生在下一次 Codex 通知或下次切换到该 window 时。
+新开的 chat 在保存名称前会被静默跳过，不会向 pane 输出 hook 错误。
 
 ## 推荐使用方式
 
